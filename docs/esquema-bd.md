@@ -38,7 +38,7 @@ El proyecto adopta un modelo documental. La decisión no se apoya únicamente en
 
 - **Embeber lo que se lee siempre junto y no se comparte.** Los ítems de una venta solo tienen sentido dentro de esa venta: se embeben como subdocumentos. Los productos, en cambio, tienen vida propia y se consultan por separado: se referencian.
 
-- **Congelar (snapshot) los datos históricos.** Cada ítem de una venta guarda una copia del nombre y del precio unitario al momento de la operación. Si mañana el producto aumenta, el ticket de ayer debe seguir mostrando lo que realmente se cobró. Es un requisito directo del contexto inflacionario descripto en la primera entrega.
+- **Congelar (snapshot) los datos históricos.** Cada ítem de una venta guarda una copia del nombre, del precio unitario y del precio de costo al momento de la operación. Si mañana el producto aumenta, el ticket de ayer debe seguir mostrando lo que ralmente se cobró, y los reportes de rentabilidad deben calcular el margen con el costo de ese momento y no el actual
 
 - **Baja lógica en lugar de borrado físico.** Los productos y usuarios no se eliminan: se marcan con `activo: false`. Así ninguna venta histórica queda apuntando a un documento inexistente.
 
