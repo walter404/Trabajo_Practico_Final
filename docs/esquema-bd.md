@@ -302,6 +302,7 @@ classDiagram
 
     Usuario "1" --> "0..*" Venta : registra
     Usuario "1" --> "0..*" AjustePrecio : ejecuta
+    Usuario "1" --> "0..*" HistorialPrecio : responsable de
     Categoria "1" --> "0..*" Producto : clasifica
     Proveedor "1" --> "0..*" Producto : provee
     Venta "1" *-- "1..*" ItemVenta : contiene
