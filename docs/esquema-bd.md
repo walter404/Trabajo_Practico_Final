@@ -140,6 +140,7 @@ erDiagram
         ObjectId ajusteId FK
         Decimal128 precioAnterior
         Decimal128 precioNuevo
+        ObjectId usuarioId FK
         date fecha
     }
 
