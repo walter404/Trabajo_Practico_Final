@@ -484,6 +484,8 @@ Los índices se definen a partir de las consultas reales del sistema, no de form
 | `ventas` ↔ `productos` | (vía `items`) | N : M | Array embebido con `productoId` más copia de nombre y precio. |
 | `historial_precios` | `productos` | N : 1 | Campo `productoId`. |
 | `historial_precios` | `ajustes_precio` | N : 1 | Campo `ajusteId`: agrupa todos los cambios de un mismo lote. |
+| `historial_precios` | `usuarios` | N : 1 | Campo `usuarioId`: responsable del cambio. |
+| `ajustes_precio` | `usuarios` | N : 1 | Campo `usuarioId`. |
 | `movimientos_stock` | `productos` / `ventas` | N : 1 | Campos `productoId` y `ventaId`. |
 
 ---
