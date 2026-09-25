@@ -56,6 +56,7 @@ El proyecto adopta un modelo documental. La decisión no se apoya únicamente en
 erDiagram
     USUARIOS ||--o{ VENTAS : "registra"
     USUARIOS ||--o{ AJUSTES_PRECIO : "ejecuta"
+    USUARIOS ||--o{ HISTORIAL_PRECIOS : "responsable de"
     CATEGORIAS ||--o{ PRODUCTOS : "clasifica"
     PROVEEDORES ||--o{ PRODUCTOS : "provee"
     PRODUCTOS ||--o{ HISTORIAL_PRECIOS : "registra cambio"
