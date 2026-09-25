@@ -109,8 +109,11 @@ erDiagram
         date fecha
         ObjectId usuarioId FK
         array items "embebido"
+        Decimal128 subtotal
+        Decimal128 descuento
         Decimal128 total
         string metodoPago
+        Decimal128 montoRecibido
         Decimal128 vuelto
         string estado "confirmada | anulada"
     }
