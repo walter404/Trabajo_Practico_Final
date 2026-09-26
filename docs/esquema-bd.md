@@ -97,8 +97,8 @@ erDiagram
         ObjectId proveedorId FK
         Decimal128 precioCosto
         Decimal128 precioVenta
-        number stock
-        number stockMinimo
+        number stock "no negativo (>= 0)"
+        number stockMinimo "no negativo (>= 0)"
         boolean activo
         date fechaUltimoCambioPrecio
     }
@@ -374,8 +374,8 @@ Colección central del sistema: catálogo, precios y stock.
 | `precioCosto` | Decimal128 | Sí | Costo de compra, base para calcular el margen. |
 | `precioVenta` | Decimal128 | Sí | Precio exhibido en góndola y cobrado en caja. |
 | `unidadMedida` | String | Sí | `unidad` \| `kg` \| `litro`. |
-| `stock` | Number | Sí | Existencia actual. Se descuenta automáticamente en cada venta. |
-| `stockMinimo` | Number | Sí | Umbral que dispara la alerta de stock bajo. |
+| `stock` | Number | Sí | Existencia actual. Se descuenta automáticamente en cada venta. No puede ser negativo (`min: 0`, ver punto 9). |
+| `stockMinimo` | Number | Sí | Umbral que dispara la alerta de stock bajo. No puede ser negativo (`min: 0`). |
 | `activo` | Boolean | Sí | Baja lógica. |
 | `fechaUltimoCambioPrecio` | Date | No | Permite detectar productos rezagados sin remarcar. |
 
@@ -563,6 +563,10 @@ Dado que MongoDB no impone integridad referencial, el sistema la garantiza desde
 - **Índices únicos:** la unicidad del email, del código de barras y del CUIT del proveedor la garantiza el motor mediante índices, no el código de la aplicación.
 - **Bajas lógicas:** ningún producto, usuario o categoría se elimina físicamente, de modo que las ventas históricas nunca quedan huérfanas.
 - **Snapshots en las ventas:** el ticket conserva el nombre y el precio del momento, por lo que un cambio posterior en el producto no altera la información histórica.
+- **Stock nunca negativo:** se garantiza en tres niveles complementarios:
+  1. **Esquema de Mongoose:** `stock: { type: Number, required: true, min: 0 }`. Rechaza altas y ediciones con stock negativo.
+  2. **Actualización condicionada:** el descuento en caja usa el filtro `stock: { $gte: cantidad }` (ver punto 8.2). Esta capa es necesaria porque los validadores de Mongoose no se ejecutan sobre el operador `$inc`, que es el que se usa para descontar stock.
+  3. **Validación en la base:** regla `$jsonSchema` con `stock: { minimum: 0 }` sobre la colección `productos`. Actúa sobre cualquier escritura, incluso las que no pasan por Mongoose.
 - **Transacciones:** el descuento de stock y el registro de la venta se ejecutan dentro de una misma transacción, de modo que ambos se confirman o ninguno.
 - **Validación de esquema en la base:** se prevé aplicar reglas de `$jsonSchema` sobre las colecciones críticas como segunda barrera ante datos inválidos.
 
@@ -592,3 +596,4 @@ No todas las colecciones se implementan de una vez. Sin embargo, todas quedan de
 |---|---|---|
 | 2026-09-09 | Versión inicial del esquema, presentada para aprobación del tutor. | Grupo |
 | 2026-09-26 | Se define índice único parcial sobre `cuit` en `proveedores` (mejora 3 sugerida por el tutor). | Ignacio Salazar |
+| 2026-09-26 | Se agrega validación de stock no negativo en `productos` en tres niveles (mejora 4 sugerida por el tutor). | Ignacio Salazar |
