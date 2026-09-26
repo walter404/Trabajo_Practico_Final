@@ -84,7 +84,7 @@ erDiagram
     PROVEEDORES {
         ObjectId _id PK
         string nombre
-        string cuit
+        string cuit UK "único cuando existe"
         object contacto
         boolean activo
     }
@@ -356,7 +356,7 @@ Datos del proveedor. Permite aumentar precios filtrando por proveedor.
 |---|---|:--:|---|
 | `_id` | ObjectId | auto | Identificador único. |
 | `nombre` | String | Sí | Razón social o nombre comercial. |
-| `cuit` | String | No | CUIT del proveedor. |
+| `cuit` | String | No | CUIT del proveedor. Único cuando existe: no puede haber dos proveedores con el mismo CUIT (ver índices). |
 | `contacto` | Object | No | Subdocumento con teléfono y email. |
 | `activo` | Boolean | Sí | Baja lógica. |
 
@@ -465,6 +465,7 @@ Los índices se definen a partir de las consultas reales del sistema, no de form
 | Colección | Índice | Tipo | Motivo |
 |---|---|---|---|
 | `usuarios` | `{ email: 1 }` | Único | Evita cuentas duplicadas y acelera el login. |
+| `proveedores` | `{ cuit: 1 }` | Único, parcial | Evita registrar dos veces al mismo proveedor. Parcial (`partialFilterExpression: { cuit: { $type: "string" } }`) porque el CUIT es opcional: la unicidad solo se exige a los proveedores que lo tienen cargado. |
 | `productos` | `{ codigoBarras: 1 }` | Único, sparse | Búsqueda instantánea en caja. Sparse porque hay productos sin código. |
 | `productos` | `{ nombre: "text" }` | Texto | Búsqueda por nombre parcial desde el POS. |
 | `productos` | `{ categoriaId: 1, activo: 1 }` | Compuesto | Filtrado de productos para el aumento masivo. |
@@ -559,7 +560,7 @@ db.productos.find({
 Dado que MongoDB no impone integridad referencial, el sistema la garantiza desde la aplicación mediante las siguientes reglas:
 
 - **Validación en los modelos de Mongoose:** campos obligatorios, tipos, valores admitidos en los campos de tipo enumerado y verificación de existencia de los documentos referenciados antes de insertar.
-- **Índices únicos:** la unicidad del email y del código de barras la garantiza el motor mediante índices, no el código de la aplicación.
+- **Índices únicos:** la unicidad del email, del código de barras y del CUIT del proveedor la garantiza el motor mediante índices, no el código de la aplicación.
 - **Bajas lógicas:** ningún producto, usuario o categoría se elimina físicamente, de modo que las ventas históricas nunca quedan huérfanas.
 - **Snapshots en las ventas:** el ticket conserva el nombre y el precio del momento, por lo que un cambio posterior en el producto no altera la información histórica.
 - **Transacciones:** el descuento de stock y el registro de la venta se ejecutan dentro de una misma transacción, de modo que ambos se confirman o ninguno.
@@ -590,3 +591,4 @@ No todas las colecciones se implementan de una vez. Sin embargo, todas quedan de
 | Fecha | Cambio | Responsable |
 |---|---|---|
 | 2026-09-09 | Versión inicial del esquema, presentada para aprobación del tutor. | Grupo |
+| 2026-09-26 | Se define índice único parcial sobre `cuit` en `proveedores` (mejora 3 sugerida por el tutor). | Ignacio Salazar |
