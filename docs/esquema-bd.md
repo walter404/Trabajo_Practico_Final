@@ -57,14 +57,19 @@ erDiagram
     USUARIOS ||--o{ VENTAS : "registra"
     USUARIOS ||--o{ AJUSTES_PRECIO : "ejecuta"
     USUARIOS ||--o{ HISTORIAL_PRECIOS : "responsable de"
+    USUARIOS ||--o{ INGRESOS_STOCK : "registra"
     CATEGORIAS ||--o{ PRODUCTOS : "clasifica"
     PROVEEDORES ||--o{ PRODUCTOS : "provee"
+    PROVEEDORES ||--o{ INGRESOS_STOCK : "provee"
     PRODUCTOS ||--o{ HISTORIAL_PRECIOS : "registra cambio"
     AJUSTES_PRECIO ||--o{ HISTORIAL_PRECIOS : "agrupa (lote)"
     PRODUCTOS ||--o{ MOVIMIENTOS_STOCK : "genera"
     VENTAS ||--o{ MOVIMIENTOS_STOCK : "origina"
+    INGRESOS_STOCK ||--{ MOVIMIENTOS_STOCK : "origina"
     VENTAS ||--|{ ITEMS_EMBEBIDOS : "contiene"
     PRODUCTOS ||--o{ ITEMS_EMBEBIDOS : "snapshot de"
+    INGRESOS_STOCK ||--|{ ITEMS_INGRESO : "contiene"
+    PRODUCTOS ||--o{ ITEMS_INGRESO : "corresponde a"
 
     USUARIOS {
         ObjectId _id PK
@@ -147,6 +152,25 @@ erDiagram
         ObjectId usuarioId FK
         date fecha
     }
+    
+    INGRESOS_STOCK { 
+        ObjectId _id PK number 
+        numeroIngreso UK 
+        date fecha 
+        ObjectId proveedorId FK 
+        ObjectId usuarioId FK 
+        array items "embebido" 
+        Decimal128 total 
+        string observaciones 
+        string estado "confirmado | anulado"
+    }
+
+    ITEMS_INGRESO {
+        ObjectId productoId FK 
+        number cantidad 
+        Decimal128 costoUnitario 
+        Decimal128 subtotal
+    }
 
     MOVIMIENTOS_STOCK {
         ObjectId _id PK
@@ -155,6 +179,7 @@ erDiagram
         number cantidad
         number stockResultante
         ObjectId ventaId FK
+        ObjectId ingresoId FK
         date fecha
     }
 ```
@@ -254,6 +279,26 @@ classDiagram
         +Date fecha
     }
 
+    class IngresoStock {
+        +ObjectId _id 
+        +Number numeroIngreso 
+        +Date fecha 
+        +ObjectId proveedorId 
+        +ObjectId usuarioId 
+        +ItemIngreso[] items 
+        +Decimal128 total 
+        +String observaciones 
+        +EstadoIngreso estado
+    }
+
+    class ItemIngreso {
+        <<embebido en IngresoStock>> 
+        +ObjectId productoId 
+        +Number cantidad 
+        +Decimal128 costoUnitario 
+        +Decimal128 subtotal
+    }
+
     class MovimientoStock {
         +ObjectId _id
         +ObjectId productoId
@@ -261,6 +306,7 @@ classDiagram
         +Number cantidad
         +Number stockResultante
         +ObjectId ventaId
+        +ObjectId ingresoId
         +Date fecha
     }
 
@@ -306,18 +352,23 @@ classDiagram
     Usuario "1" --> "0..*" Venta : registra
     Usuario "1" --> "0..*" AjustePrecio : ejecuta
     Usuario "1" --> "0..*" HistorialPrecio : responsable de
+    Usuario "1" --> "0..*" IngresoStock : registra
     Categoria "1" --> "0..*" Producto : clasifica
     Proveedor "1" --> "0..*" Producto : provee
+    Proveedor "1" --> "0..*" IngresoStock : provee
     Venta "1" *-- "1..*" ItemVenta : contiene
     ItemVenta "0..*" ..> "1" Producto : snapshot de
+    IngresoStock "1" *-- "1..*" ItemIngreso : contiene ItemIngreso "0..*" ..> "1" Producto : corresponde a
     Producto "1" --> "0..*" HistorialPrecio : registra cambio
     AjustePrecio "1" --> "1..*" HistorialPrecio : agrupa lote
     Producto "1" --> "0..*" MovimientoStock : genera
     Venta "1" --> "0..*" MovimientoStock : origina
+    IngresoStock "1" --> "0..*" MovimientoStock : origina
 
     Usuario ..> Rol
     Venta ..> MetodoPago
     Venta ..> EstadoVenta
+    IngresoStock ..> EstadoIngreso
     AjustePrecio ..> TipoAjuste
     MovimientoStock ..> TipoMovimiento
 ```
@@ -435,6 +486,33 @@ Detalle por producto de cada cambio de precio.
 | `usuarioId` | ObjectId | Sí | Responsable del cambio. |
 | `fecha` | Date | Sí | Momento del cambio. |
 
+### `ingresos_stock`
+Registro de cada ingreso de mercadería recibido por el comercio.
+Esta colección representa la operación de recepción de mercadería y complementa a `movimientos_stock`. Permite conocer qué proveedor entregó los productos, quién registró el ingreso, qué productos ingresaron, en qué cantidad y a qué costo.
+
+| Campo | Tipo | Req. | Descripción |
+|---|---|:--:|---|
+| `_id` | ObjectId | auto | Identificador único. |
+| `numeroIngreso` | Number | Sí | Número correlativo del ingreso, generado con un contador atómico. |
+| `fecha` | Date | Si | Fecha y hora en que se registró la recepción. |
+| `proveedorId` | ObjectId | Sí | Referencia al proveedor que entregó la mercadería. |
+| `usuarioId` | ObjectId | Sí | Usuario responsable de registrar el ingreso. |
+| `items` | Array<ItemIngreso> | Sí | Subdocumentos embebidos con los productos recibidos. |
+| `total` | Decimal128 | Sí | Valor total de la mercadería ingresada. |
+| `observaciones` | String | No | Información adicional sobre la recepción. |
+| `estado` | String | Sí | confirmado - anulado. La anulación no elimina el documento. |
+
+### `items_ingreso` (subdocumento embedido en `ingresos_stock`)
+
+| Campo | Tipo | Req. | Descripción |
+|---|---|:--:|---|
+| `productoId` | ObjectId | Sí | Referencia al producto recibido. |
+| `cantidad` | Number | Si | Cantidad ingresada al stock. |
+| `costoUnitario` | Decimal128 | Sí | Costo de adquisición del producto en ese ingreso. |
+| `subtotal` | Decimal128 | Sí | cantidad × costoUnitario. |
+
+El costo unitario se conserva dentro del ingreso para mantener el historial de costos aunque posteriormente cambie el costo actual del producto.
+
 ### `movimientos_stock`
 Trazabilidad de las variaciones de existencias.
 
@@ -446,6 +524,7 @@ Trazabilidad de las variaciones de existencias.
 | `cantidad` | Number | Sí | Positiva o negativa según el tipo de movimiento. |
 | `stockResultante` | Number | Sí | Existencia luego del movimiento. |
 | `ventaId` | ObjectId | No | Venta que originó el movimiento, si corresponde. |
+| `ingresoId` | ObjectId | No | Ingreso de mercadería que originó el movimiento, si corresponde. |
 | `fecha` | Date | Sí | Momento del movimiento. |
 
 ### `contadores`
@@ -474,7 +553,11 @@ Los índices se definen a partir de las consultas reales del sistema, no de form
 | `ventas` | `{ fecha: -1 }` | Simple | Reportes por período, ordenados de más reciente a más antiguo. |
 | `historial_precios` | `{ productoId: 1, fecha: -1 }` | Compuesto | Historial de precios de un producto. |
 | `historial_precios` | `{ ajusteId: 1 }` | Simple | Permite revertir un lote completo en una sola consulta. |
+| `ingresos_stock` | `{ numeroIngreso : 1 }` | Unico | Garantiza que no se repita la numeración de los ingresos. |
+| `ingresos_stock` | `{ fecha: -1 }` | Simple | Consulta de ingresos por período. |
+| `ingresos_stock` | `{ proveedorId: 1, fecha: -1 }` | Compuesto | Consulta de ingresos realizados por proveedor. |
 | `movimientos_stock` | `{ productoId: 1, fecha: -1 }` | Compuesto | Trazabilidad del stock de un producto. |
+| `movimientos_stock` | `{ ingresoId: 1}` | Simple | Permite consultar los movimientos generados por un ingreso. |
 
 ---
 
@@ -490,7 +573,11 @@ Los índices se definen a partir de las consultas reales del sistema, no de form
 | `historial_precios` | `ajustes_precio` | N : 1 | Campo `ajusteId`: agrupa todos los cambios de un mismo lote. |
 | `historial_precios` | `usuarios` | N : 1 | Campo `usuarioId`: responsable del cambio. |
 | `ajustes_precio` | `usuarios` | N : 1 | Campo `usuarioId`. |
+| `ingresos_stock` | `proveedores` | N : 1 | Campo `proveedorId`. |
+| `ingresos_stock` | `usuarios` | N : 1 | Campo `usuarioId`: responsable del ingreso. |
+| `ingresos_stock ↔ productos` | `(via items)` | N : M | Array embebido con `productoId`, cantidad y costo unitario. |
 | `movimientos_stock` | `productos` / `ventas` | N : 1 | Campos `productoId` y `ventaId`. |
+| `movimientos_stock` | `ingresos_stock` | N : 1 | Campo `productoId` e `ingresoId`. |
 
 ---
 
@@ -554,6 +641,43 @@ db.productos.find({
 ```
 
 ---
+## 8.6 Ingreso de mercaderia
+
+Cuando el comercio recibe mercadería de un proveedor, se registra un `ingreso_stock` con el proveedor, usuario responsable, productos, cantidades y costos unitarios.
+
+Al confirmar el ingreso:
+
+- Se registra el ingreso de mercadería.
+- Se incrementa el stock de cada producto.
+- Se genera un `movimiento_stock` de tipo `ingreso`.
+- Se conserva el costo de compra correspondiente a ese momento.
+- Se actualiza el costo actual del producto según la lógica definida por la aplicación.
+
+La operación se ejecuta dentro de una transacción para evitar que el ingreso quede registrado si la actualización del stock falla.
+
+Conceptualmente:
+
+INGRESO_STOCK
+      ↓
+actualiza PRODUCTOS.stock
+      ↓
+genera MOVIMIENTO_STOCK
+      ↓
+tipo = "ingreso"
+
+## 8.7 Consulta de historial de ingreso
+
+La existencia de la colección `ingresos_stock` permite consultar posteriormente:
+
+- qué mercadería ingresó;
+- cuándo ingresó;
+- qué proveedor la entregó;
+- qué usuario registró la recepción;
+- qué cantidad se recibió;
+- cuál era el costo de cada producto;
+- cuál fue el valor total del ingreso.
+
+Esto permite diferenciar el simple movimiento de stock de la operación comercial que lo originó.
 
 ## 9. Integridad y validaciones
 
@@ -563,12 +687,14 @@ Dado que MongoDB no impone integridad referencial, el sistema la garantiza desde
 - **Índices únicos:** la unicidad del email, del código de barras y del CUIT del proveedor la garantiza el motor mediante índices, no el código de la aplicación.
 - **Bajas lógicas:** ningún producto, usuario o categoría se elimina físicamente, de modo que las ventas históricas nunca quedan huérfanas.
 - **Snapshots en las ventas:** el ticket conserva el nombre y el precio del momento, por lo que un cambio posterior en el producto no altera la información histórica.
+- Historial de costos de ingreso: cada `items_ingreso` conserva el costo unitario correspondiente al momento de recepción de la mercadería.
 - **Stock nunca negativo:** se garantiza en tres niveles complementarios:
   1. **Esquema de Mongoose:** `stock: { type: Number, required: true, min: 0 }`. Rechaza altas y ediciones con stock negativo.
   2. **Actualización condicionada:** el descuento en caja usa el filtro `stock: { $gte: cantidad }` (ver punto 8.2). Esta capa es necesaria porque los validadores de Mongoose no se ejecutan sobre el operador `$inc`, que es el que se usa para descontar stock.
   3. **Validación en la base:** regla `$jsonSchema` con `stock: { minimum: 0 }` sobre la colección `productos`. Actúa sobre cualquier escritura, incluso las que no pasan por Mongoose.
 - **Transacciones:** el descuento de stock y el registro de la venta se ejecutan dentro de una misma transacción, de modo que ambos se confirman o ninguno.
 - **Validación de esquema en la base:** se prevé aplicar reglas de `$jsonSchema` sobre las colecciones críticas como segunda barrera ante datos inválidos.
+- Trazabilidad de movimientos: todo cambio de stock originado por una venta o por un ingreso queda asociado a la operación correspondiente mediante `ventaId` o `ingresoId`.
 
 ---
 
@@ -586,6 +712,7 @@ No todas las colecciones se implementan de una vez. Sin embargo, todas quedan de
 | `ajustes_precio` | Etapa 1 | Soporta la innovación central del proyecto. |
 | `historial_precios` | Etapa 1 | Se completa junto con cada ajuste de precios. |
 | `proveedores` | Etapa 2 | El campo `proveedorId` ya se define en `productos` para no migrar después. |
+| `ingresos_stock` | Etapa 2 | Registro de recepción de mercadería. |
 | `movimientos_stock` | Etapa 2 | En la Etapa 1 el stock se descuenta directamente sobre el producto. |
 
 ---
@@ -597,3 +724,12 @@ No todas las colecciones se implementan de una vez. Sin embargo, todas quedan de
 | 2026-09-09 | Versión inicial del esquema, presentada para aprobación del tutor. | Grupo |
 | 2026-09-26 | Se define índice único parcial sobre `cuit` en `proveedores` (mejora 3 sugerida por el tutor). | Ignacio Salazar |
 | 2026-09-26 | Se agrega validación de stock no negativo en `productos` en tres niveles (mejora 4 sugerida por el tutor). | Ignacio Salazar |
+| 2026-09-26 | Se agrega la colección `ingresos_stock` para registrar la recepción de mercadería y su relación con proveedores, usuarios y productos. | Grupo |
+| 2026-09-26 | Se agregan los subdocumentos `items_ingreso` para conservar cantidades y costos de cada ingreso. | Grupo |
+| 2026-09-26 | Se agrega `ingresoId` a `movimientos_stock` para identificar el ingreso que origina cada movimiento. | Grupo |
+| 2026-09-26 | Se reemplaza la denominación "Diagrama entidad-relación" por "Modelo lógico de colecciones MongoDB". | Grupo |
+| 2026-09-26 | Se unifican los tipos de `movimientos_stock` incluyendo `anulacion` en el modelo. | Grupo |
+
+## 11. Conclusíon 
+
+El diseño de la base de datos permite organizar de forma clara la informacion necesaria para el funcionamiento del sistema de ventas e inventario. Se definieron las principales colecciones, sus relaciones y los movimientos de stock, incluyendo el ingreso de mecadería y el historial de precios. De esta manera, la estructura queda preparada para continuar con la implementacion del sistema.
