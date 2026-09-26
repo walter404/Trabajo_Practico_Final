@@ -7,8 +7,30 @@
 - **Grupo:** 100
 - **Estudiantes:** Ignacio Salazar, Martín Gomez, Walter Verdun  
 - **Carrera:** Tecnicatura en Programación  
-- **Unidad:** Unidad 1 - Actividad 1 (U1-A1)  
+- **Entrega actual:** 2.ª Entrega — Diseño y Módulos  
 - **Stack Tecnológico:** MERN (MongoDB, Express, React, Node.js)  
+
+## 📚 Documentación del proyecto
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/esquema-bd.md`](./docs/esquema-bd.md) | Esquema de la base de datos: colecciones, campos, tipos, relaciones, índices y diagramas. |
+| [`docs/modulos.md`](./docs/modulos.md) | Listado de módulos con descripción, funcionalidades, endpoints y prioridad. |
+| [`docs/arquitectura.md`](./docs/arquitectura.md) | Arquitectura elegida, tecnologías definitivas y justificación de las decisiones técnicas. |
+| [`database/`](./database/) | Scripts de creación de colecciones e índices, y datos iniciales de prueba. |
+
+## 📁 Estructura del repositorio
+
+```
+Trabajo_Practico_Final/
+├── backend/     API REST en Node.js + Express (arquitectura en capas)
+├── frontend/    Aplicación React (SPA)
+├── database/    Scripts de base de datos (schemas y seeds)
+├── docs/        Documentación, diagramas, módulos y arquitectura
+└── README.md
+```
+
+> En esta etapa las carpetas `backend/` y `frontend/` contienen solo la estructura inicial, sin código. La implementación comienza una vez aprobada la 2.ª entrega.
 
 ---
 
@@ -58,73 +80,46 @@ Módulo de **Gestión Masiva de Precios e Impresión**:
 
 ## 5. Arquitectura y Stack Tecnológico (MERN)
 
+Aplicación web cliente-servidor: un frontend **React** (SPA) consume una **API REST** en **Node.js + Express**, organizada en capas (routes → middlewares → controllers → services → models), que persiste los datos en **MongoDB Atlas**.
+
 | Tecnología | Capa | Función |
 |------------|------|---------|
 | **MongoDB** | Base de Datos | Catálogo de productos, ventas, historial de precios |
-| **Express.js** | Backend API REST | Endpoints `/api/productos`, `/api/ventas`, middlewares |
+| **Express.js** | Backend API REST | Endpoints, middlewares de autenticación y validación |
 | **React.js** | Frontend | POS, edición masiva, renderizado dinámico |
 | **Node.js** | Backend Runtime | Servidor asíncrono, E/S no bloqueante |
+
+Detalle y justificación de cada decisión en [`docs/arquitectura.md`](./docs/arquitectura.md).
 
 ---
 
 ## 6. Módulos del Sistema
 
-| Módulo | Descripción | Operaciones |
-|--------|-------------|-------------|
-| Autenticación y Usuarios | Roles Admin y Cajero | login(), logout(), crearUsuario() |
-| Catálogo de Productos | ABM completo | listarProductos(), crearProducto(), editarProducto() |
-| Inventario y Stock | Control de existencias y alertas | descontarStock(), consultarStock() |
-| Punto de Venta (POS) | Carrito dinámico y tickets | agregarAlCarrito(), confirmarVenta(), emitirTicket() |
-| Gestión Masiva de Precios | Ajustes en lote | aplicarPorcentaje(), aplicarValorFijo() |
-| Impresión de Etiquetas | Generación masiva | generarEtiquetas(), imprimirLote() |
-| Reportes | Ventas y rentabilidad | reporteVentas(), productosMasVendidos() |
+| Módulo | Prioridad | Etapa |
+|--------|:---------:|:-----:|
+| Autenticación y Usuarios | Alta | 1 |
+| Catálogo de Productos y Categorías | Alta | 1 |
+| Punto de Venta (POS) | Alta | 1 |
+| Gestión Masiva de Precios | Alta | 1 |
+| Inventario y Stock | Alta | 1 |
+| Impresión de Etiquetas de Góndola | Media | 2 |
+| Reportes | Media | 2 |
+| Proveedores | Media | 2 |
+| Movimientos de Stock | Baja | 2 |
+
+Descripción, funcionalidades y endpoints de cada módulo en [`docs/modulos.md`](./docs/modulos.md).
 
 ---
 
-## 7. Endpoints API REST
+## 7. Modelo de Datos (MongoDB)
 
-Ejemplos principales:
-- **Autenticación:**  
-  - `POST /api/auth/login` → Validar credenciales  
-  - `GET /api/usuarios` → Listar usuarios  
+Colecciones: `usuarios`, `categorias`, `proveedores`, `productos`, `ventas` (con ítems embebidos), `ajustes_precio`, `historial_precios`, `movimientos_stock` y `contadores`.
 
-- **Productos:**  
-  - `GET /api/productos` → Listar productos  
-  - `POST /api/productos` → Alta de producto  
-  - `PUT /api/productos/:id` → Editar producto  
-  - `DELETE /api/productos/:id` → Baja de producto  
-
-- **Inventario:**  
-  - `GET /api/inventario/alertas` → Stock bajo  
-  - `PUT /api/inventario/:id` → Ajustar stock  
-
-- **Ventas (POS):**  
-  - `POST /api/ventas` → Registrar venta y descontar stock  
-  - `GET /api/ventas/:id/ticket` → Generar comprobante  
-
-- **Precios:**  
-  - `POST /api/precios/simular` → Previsualizar aumento  
-  - `PUT /api/precios/lote` → Aplicar aumento en lote  
-
-- **Etiquetas:**  
-  - `POST /api/etiquetas/generar` → Generar lote de etiquetas  
-
-- **Reportes:**  
-  - `GET /api/reportes/ventas` → Ventas por período  
-  - `GET /api/reportes/rentabilidad` → Margen de ganancia  
+El diseño completo (campos, tipos, relaciones, índices y diagramas) está en [`docs/esquema-bd.md`](./docs/esquema-bd.md), y los scripts que lo crean, en [`database/`](./database/).
 
 ---
 
-## 8. Modelo de Datos (MongoDB)
-
-- **usuarios** → _id, nombre, email, rol, activo  
-- **productos** → _id, nombre, código, categoría, precioCosto, precioVenta, stock  
-- **ventas** → _id, fecha, usuarioId, items[], total, pago, vuelto  
-- **historial_precios** → _id, productoId, precioAnterior, precioNuevo, tipoAjuste, fecha  
-
----
-
-## 9. Alcance de la Primera Etapa
+## 8. Alcance de la Primera Etapa
 - Autenticación y Usuarios  
 - Catálogo de Productos  
 - Inventario y Stock  
@@ -133,10 +128,10 @@ Ejemplos principales:
 
 ---
 
-## 10. Proyección de Escalabilidad
+## 9. Proyección de Escalabilidad
 - 📂 Carga de listas de precios por proveedores (CSV/Excel).  
 - 🏬 Multi-sucursal con stock independiente.  
-- 💳 Integración con Mercado Pago y AFIP.  
+- 💳 Integración con Mercado Pago y facturación electrónica (ARCA, ex AFIP).  
 - 📩 Notificaciones automáticas por email.  
 - 📱 Versión móvil (PWA).  
 
