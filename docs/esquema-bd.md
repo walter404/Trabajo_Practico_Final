@@ -464,6 +464,7 @@ Ticket de venta como documento autocontenido.
 | `montoRecibido` | Decimal128 | No | Efectivo entregado por el cliente. |
 | `vuelto` | Decimal128 | No | Diferencia calculada automáticamente. |
 | `estado` | String | Sí | `confirmada` \| `anulada`. La anulación no borra el documento. |
+| `anulacion` | Object | No | Subdocumento `{ usuarioId, fecha, motivo }`. Registra quién anuló la venta, cuándo y por qué. Solo existe si `estado` es `anulada`. |
 
 ### `items` (subdocumento embebido en `ventas`)
 
@@ -474,6 +475,7 @@ Ticket de venta como documento autocontenido.
 | `codigoBarras` | String | No | Copia del código al momento de la venta (snapshot). |
 | `cantidad` | Number | Sí | Unidades o peso vendido. |
 | `precioUnitario` | Decimal128 | Sí | Precio cobrado en ese momento (snapshot). No cambia si el producto aumenta después. |
+| `precioCosto` | Decimal128 | Sí | Costo del producto en ese momento (snapshot). Permite calcular la rentabilidad real de la venta. |
 | `subtotal` | Decimal128 | Sí | `cantidad × precioUnitario`. |
 
 ### `ajustes_precio`
@@ -489,6 +491,7 @@ Registro del lote: cada aumento masivo ejecutado.
 | `filtroAplicado` | Object | No | Criterio usado (categoría, proveedor, texto de búsqueda). |
 | `cantidadProductos` | Number | Sí | Cantidad de productos afectados. |
 | `revertido` | Boolean | Sí | Indica si el lote fue deshecho. |
+| `reversion` | Object | No | Subdocumento `{ usuarioId, fecha }`. Registra quién revirtió el lote y cuándo. Solo existe si `revertido` es `true`. |
 
 ### `historial_precios`
 Detalle por producto de cada cambio de precio.
@@ -514,19 +517,20 @@ Esta colección representa la operación de recepción de mercadería y compleme
 | `fecha` | Date | Si | Fecha y hora en que se registró la recepción. |
 | `proveedorId` | ObjectId | Sí | Referencia al proveedor que entregó la mercadería. |
 | `usuarioId` | ObjectId | Sí | Usuario responsable de registrar el ingreso. |
-| `items` | Array<ItemIngreso> | Sí | Subdocumentos embebidos con los productos recibidos. |
+| `items` | Array&lt;ItemIngreso&gt; | Sí | Subdocumentos embebidos con los productos recibidos. |
 | `total` | Decimal128 | Sí | Valor total de la mercadería ingresada. |
 | `observaciones` | String | No | Información adicional sobre la recepción. |
-| `estado` | String | Sí | confirmado - anulado. La anulación no elimina el documento. |
+| `estado` | String | Sí | `confirmado` \| `anulado`. La anulación no elimina el documento. |
+| `anulacion` | Object | No | Subdocumento `{ usuarioId, fecha, motivo }`. Solo existe si `estado` es `anulado`. |
 
-### `items_ingreso` (subdocumento embedido en `ingresos_stock`)
+### `items_ingreso` (subdocumento embebido en `ingresos_stock`)
 
 | Campo | Tipo | Req. | Descripción |
 |---|---|:--:|---|
 | `productoId` | ObjectId | Sí | Referencia al producto recibido. |
 | `cantidad` | Number | Si | Cantidad ingresada al stock. |
 | `costoUnitario` | Decimal128 | Sí | Costo de adquisición del producto en ese ingreso. |
-| `subtotal` | Decimal128 | Sí | cantidad × costoUnitario. |
+| `subtotal` | Decimal128 | Sí | `cantidad × costoUnitario`. |
 
 El costo unitario se conserva dentro del ingreso para mantener el historial de costos aunque posteriormente cambie el costo actual del producto.
 
@@ -542,6 +546,7 @@ Trazabilidad de las variaciones de existencias.
 | `stockResultante` | Number | Sí | Existencia luego del movimiento. |
 | `ventaId` | ObjectId | No | Venta que originó el movimiento, si corresponde. |
 | `ingresoId` | ObjectId | No | Ingreso de mercadería que originó el movimiento, si corresponde. |
+| `usuarioId` | ObjectId | Sí | Usuario que realizó la operación que originó el movimiento. |
 | `fecha` | Date | Sí | Momento del movimiento. |
 
 ### `contadores`
@@ -549,7 +554,7 @@ Colección auxiliar para numeración correlativa.
 
 | Campo | Tipo | Req. | Descripción |
 |---|---|:--:|---|
-| `_id` | String | Sí | Nombre del contador (ej. `"numeroTicket"`). |
+| `_id` | String | Sí | Nombre del contador: `"numeroTicket"` o `"numeroIngreso"`. |
 | `valor` | Number | Sí | Último valor asignado. Se incrementa de forma atómica con `$inc`. |
 
 ---
@@ -570,7 +575,7 @@ Los índices se definen a partir de las consultas reales del sistema, no de form
 | `ventas` | `{ fecha: -1 }` | Simple | Reportes por período, ordenados de más reciente a más antiguo. |
 | `historial_precios` | `{ productoId: 1, fecha: -1 }` | Compuesto | Historial de precios de un producto. |
 | `historial_precios` | `{ ajusteId: 1 }` | Simple | Permite revertir un lote completo en una sola consulta. |
-| `ingresos_stock` | `{ numeroIngreso : 1 }` | Unico | Garantiza que no se repita la numeración de los ingresos. |
+| `ingresos_stock` | `{ numeroIngreso: 1 }` | Unico | Garantiza que no se repita la numeración de los ingresos. |
 | `ingresos_stock` | `{ fecha: -1 }` | Simple | Consulta de ingresos por período. |
 | `ingresos_stock` | `{ proveedorId: 1, fecha: -1 }` | Compuesto | Consulta de ingresos realizados por proveedor. |
 | `movimientos_stock` | `{ productoId: 1, fecha: -1 }` | Compuesto | Trazabilidad del stock de un producto. |
