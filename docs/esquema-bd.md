@@ -38,7 +38,7 @@ El proyecto adopta un modelo documental. La decisión no se apoya únicamente en
 
 - **Embeber lo que se lee siempre junto y no se comparte.** Los ítems de una venta solo tienen sentido dentro de esa venta: se embeben como subdocumentos. Los productos, en cambio, tienen vida propia y se consultan por separado: se referencian.
 
-- **Congelar (snapshot) los datos históricos.** Cada ítem de una venta guarda una copia del nombre, del precio unitario y del precio de costo al momento de la operación. Si mañana el producto aumenta, el ticket de ayer debe seguir mostrando lo que ralmente se cobró, y los reportes de rentabilidad deben calcular el margen con el costo de ese momento y no el actual
+- **Congelar (snapshot) los datos históricos.** Cada ítem de una venta guarda una copia del nombre, del precio unitario y del precio de costo al momento de la operación. Si mañana el producto aumenta, el ticket de ayer debe seguir mostrando lo que realmente se cobró, y los reportes de rentabilidad deben calcular el margen con el costo de ese momento y no el actual.
 
 - **Baja lógica en lugar de borrado físico.** Los productos y usuarios no se eliminan: se marcan con `activo: false`. Así ninguna venta histórica queda apuntando a un documento inexistente.
 
@@ -59,15 +59,15 @@ erDiagram
     USUARIOS ||--o{ HISTORIAL_PRECIOS : "responsable de"
     USUARIOS ||--o{ INGRESOS_STOCK : "registra"
     CATEGORIAS ||--o{ PRODUCTOS : "clasifica"
-    PROVEEDORES ||--o{ PRODUCTOS : "provee"
+    PROVEEDORES |o--o{ PRODUCTOS : "provee"
     PROVEEDORES ||--o{ INGRESOS_STOCK : "provee"
     PRODUCTOS ||--o{ HISTORIAL_PRECIOS : "registra cambio"
-    AJUSTES_PRECIO ||--o{ HISTORIAL_PRECIOS : "agrupa (lote)"
+    AJUSTES_PRECIO |o--|{ HISTORIAL_PRECIOS : "agrupa (lote)"
     PRODUCTOS ||--o{ MOVIMIENTOS_STOCK : "genera"
-    VENTAS ||--o{ MOVIMIENTOS_STOCK : "origina"
-    INGRESOS_STOCK ||--{ MOVIMIENTOS_STOCK : "origina"
-    VENTAS ||--|{ ITEMS_EMBEBIDOS : "contiene"
-    PRODUCTOS ||--o{ ITEMS_EMBEBIDOS : "snapshot de"
+    VENTAS |o--o{ MOVIMIENTOS_STOCK : "origina"
+    INGRESOS_STOCK |o--o{ MOVIMIENTOS_STOCK : "origina"
+    VENTAS ||--|{ ITEMS_VENTA : "contiene"
+    PRODUCTOS ||--o{ ITEMS_VENTA : "snapshot de"
     INGRESOS_STOCK ||--|{ ITEMS_INGRESO : "contiene"
     PRODUCTOS ||--o{ ITEMS_INGRESO : "corresponde a"
 
@@ -121,14 +121,16 @@ erDiagram
         Decimal128 montoRecibido
         Decimal128 vuelto
         string estado "confirmada | anulada"
+        object anulacion "usuarioId, fecha, motivo"
     }
 
-    ITEMS_EMBEBIDOS {
+    ITEMS_VENTA {
         ObjectId productoId FK
         string nombre "snapshot"
         string codigoBarras "snapshot"
         number cantidad
         Decimal128 precioUnitario "snapshot"
+        Decimal128 precioCosto "snapshot"
         Decimal128 subtotal
     }
 
@@ -141,6 +143,7 @@ erDiagram
         object filtroAplicado
         number cantidadProductos
         boolean revertido
+        object reversion "usuarioId, fecha"
     }
 
     HISTORIAL_PRECIOS {
@@ -152,34 +155,36 @@ erDiagram
         ObjectId usuarioId FK
         date fecha
     }
-    
-    INGRESOS_STOCK { 
-        ObjectId _id PK number 
-        numeroIngreso UK 
-        date fecha 
-        ObjectId proveedorId FK 
-        ObjectId usuarioId FK 
-        array items "embebido" 
-        Decimal128 total 
-        string observaciones 
+
+    INGRESOS_STOCK {
+        ObjectId _id PK
+        number numeroIngreso UK
+        date fecha
+        ObjectId proveedorId FK
+        ObjectId usuarioId FK
+        array items "embebido"
+        Decimal128 total
+        string observaciones
         string estado "confirmado | anulado"
+        object anulacion "usuarioId, fecha, motivo"
     }
 
     ITEMS_INGRESO {
-        ObjectId productoId FK 
-        number cantidad 
-        Decimal128 costoUnitario 
+        ObjectId productoId FK
+        number cantidad
+        Decimal128 costoUnitario
         Decimal128 subtotal
     }
 
     MOVIMIENTOS_STOCK {
         ObjectId _id PK
         ObjectId productoId FK
-        string tipo "venta | ingreso | ajuste"
+        string tipo "venta | ingreso | ajuste | anulacion"
         number cantidad
         number stockResultante
         ObjectId ventaId FK
         ObjectId ingresoId FK
+        ObjectId usuarioId FK
         date fecha
     }
 ```
