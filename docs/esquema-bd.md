@@ -251,6 +251,7 @@ classDiagram
         +Decimal128 montoRecibido
         +Decimal128 vuelto
         +EstadoVenta estado
+        +Object anulacion.
     }
 
     class ItemVenta {
@@ -260,6 +261,7 @@ classDiagram
         +String codigoBarras
         +Number cantidad
         +Decimal128 precioUnitario
+        +Decimal128 precioCosto
         +Decimal128 subtotal
     }
 
@@ -272,6 +274,7 @@ classDiagram
         +Object filtroAplicado
         +Number cantidadProductos
         +Boolean revertido
+        +Object reversion
     }
 
     class HistorialPrecio {
@@ -294,6 +297,7 @@ classDiagram
         +Decimal128 total 
         +String observaciones 
         +EstadoIngreso estado
+        +Object anulacion
     }
 
     class ItemIngreso {
@@ -312,6 +316,7 @@ classDiagram
         +Number stockResultante
         +ObjectId ventaId
         +ObjectId ingresoId
+        +ObjectId usuarioId
         +Date fecha
     }
 
@@ -340,6 +345,12 @@ classDiagram
         anulada
     }
 
+        class EstadoIngreso {
+        <<enumeration>>
+        confirmado
+        anulado
+    }
+
     class TipoAjuste {
         <<enumeration>>
         porcentaje
@@ -363,7 +374,8 @@ classDiagram
     Proveedor "1" --> "0..*" IngresoStock : provee
     Venta "1" *-- "1..*" ItemVenta : contiene
     ItemVenta "0..*" ..> "1" Producto : snapshot de
-    IngresoStock "1" *-- "1..*" ItemIngreso : contiene ItemIngreso "0..*" ..> "1" Producto : corresponde a
+    IngresoStock "1" *-- "1..*" ItemIngreso : contiene 
+    ItemIngreso "0..*" ..> "1" Producto : corresponde a
     Producto "1" --> "0..*" HistorialPrecio : registra cambio
     AjustePrecio "1" --> "1..*" HistorialPrecio : agrupa lote
     Producto "1" --> "0..*" MovimientoStock : genera
