@@ -17,6 +17,8 @@
 | [`docs/esquema-bd.md`](./docs/esquema-bd.md) | Esquema de la base de datos: colecciones, campos, tipos, relaciones, índices y diagramas. |
 | [`docs/modulos.md`](./docs/modulos.md) | Listado de módulos con descripción, funcionalidades, endpoints y prioridad. |
 | [`docs/arquitectura.md`](./docs/arquitectura.md) | Arquitectura elegida, tecnologías definitivas y justificación de las decisiones técnicas. |
+| [`docs/requerimientos.md`](./docs/requerimientos.md) | Requerimientos funcionales y no funcionales, reglas de negocio, criterios de aceptación y matriz de trazabilidad. |
+| [`docs/casos-de-uso.md`](./docs/casos-de-uso.md) | Actores, diagrama y especificación de casos de uso, diagramas de secuencia y de actividades. |
 | [`database/`](./database/) | Scripts de creación de colecciones e índices, y datos iniciales de prueba. |
 
 ## 📁 Estructura del repositorio
@@ -71,10 +73,11 @@ Esto genera tareas tediosas y pérdidas de rentabilidad por desactualización de
 
 ## 4. Innovación Clave
 Módulo de **Gestión Masiva de Precios e Impresión**:
-1. Selección múltiple en lote.  
+1. Selección múltiple en lote (por categoría o búsqueda; por proveedor desde la Etapa 2).  
 2. Modificación por porcentaje (%).  
-3. Modificación por número final ($).  
-4. Impresión masiva de etiquetas de góndola.  
+3. Modificación por valor fijo ($): suma o resta un importe al precio actual.  
+4. Vista previa antes de aplicar y reversión de un lote aplicado por error.  
+5. Impresión masiva de etiquetas de góndola (Etapa 2). 
 
 ---
 
@@ -105,7 +108,7 @@ Detalle y justificación de cada decisión en [`docs/arquitectura.md`](./docs/ar
 | Impresión de Etiquetas de Góndola | Media | 2 |
 | Reportes | Media | 2 |
 | Proveedores | Media | 2 |
-| Movimientos de Stock | Baja | 2 |
+| Ingresos de Mercadería y Movimientos de Stock | Media | 2 |
 
 Descripción, funcionalidades y endpoints de cada módulo en [`docs/modulos.md`](./docs/modulos.md).
 
@@ -113,7 +116,7 @@ Descripción, funcionalidades y endpoints de cada módulo en [`docs/modulos.md`]
 
 ## 7. Modelo de Datos (MongoDB)
 
-Colecciones: `usuarios`, `categorias`, `proveedores`, `productos`, `ventas` (con ítems embebidos), `ajustes_precio`, `historial_precios`, `movimientos_stock` y `contadores`.
+Colecciones: `usuarios`, `categorias`, `proveedores`, `productos`, `ventas` (con ítems embebidos), `ajustes_precio`, `historial_precios`, `ingresos_stock` (con ítems embebidos), `movimientos_stock` y `contadores`.
 
 El diseño completo (campos, tipos, relaciones, índices y diagramas) está en [`docs/esquema-bd.md`](./docs/esquema-bd.md), y los scripts que lo crean, en [`database/`](./database/).
 
